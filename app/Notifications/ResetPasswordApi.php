@@ -41,7 +41,7 @@ class ResetPasswordApi extends Notification
             ->line('You are receiving this email because we received a password reset request.')
             ->action('Reset Password', $url)
             ->line('If you did not request a password reset, no further action is required.')
-            ->salutation('Regards, MyApp Team'); // <-- change here
+            ->salutation('Regards, MyApp Team'); 
 
     }
 
