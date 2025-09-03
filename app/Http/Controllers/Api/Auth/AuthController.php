@@ -14,34 +14,30 @@ class AuthController extends Controller
     public function register(Request $request)
     {
         $request->validate([
-            'first_name'=>'required|string|max:255',
-            'last_name'=>'required|string|max:255',
-            'email'=>'required|email|unique:users,email',
-            'phone_number'=>'required|string|max:20',
-            'password'=>'required|string|min:6|confirmed',
+            'first_name'    => 'required|string|max:255',
+            'last_name'     => 'required|string|max:255',
+            'email'         => 'required|email|unique:users,email',
+            'phone_number'  => 'required|string|max:20',
+            'password'      => 'required|string|min:6|confirmed',
         ]);
 
+        // Create user
         $user = User::create([
-            'first_name'=>$request->first_name,
-            'last_name'=>$request->last_name,
-            'email'=>$request->email,
-            'phone_number'=>$request->phone_number,
-            'password'=>Hash::make($request->password),
+            'first_name'    => $request->first_name,
+            'last_name'     => $request->last_name,
+            'email'         => $request->email,
+            'phone_number'  => $request->phone_number,
+            'password'      => Hash::make($request->password),
         ]);
 
-        $token = $user->createToken('auth_token')->plainTextToken;
+       
 
         return response()->json([
-            'status'=>'success',
-            'message'=>'User registered successfully',
-            'data'=>[
-                'user'=>$user,
-                'access_token'=>$token,
-                'token_type'=>'Bearer'
-            ],
-            'meta'=>[
-                'timestamp'=>now()->toIso8601String(),
-                'version'=>'1.0'
+            'status'  => 'success',
+            'message' => 'User registered successfully',
+            'meta'    => [
+                'timestamp' => now()->toIso8601String(),
+                'version'   => '1.0'
             ]
         ], 201);
     }
