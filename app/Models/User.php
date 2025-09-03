@@ -47,6 +47,14 @@ class User extends Authenticatable
         $this->notify(new ResetPasswordApi($token));
     }
 
+    public function projects()
+        {
+            return $this->belongsToMany(Project::class, 'project_members')
+                        ->withPivot('assigned_role_id')
+                        ->withTimestamps();
+        }
+
+
     /**
      * Get the attributes that should be cast.
      *

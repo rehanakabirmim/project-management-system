@@ -11,6 +11,8 @@ use App\Http\Controllers\Api\Department\DepartmentController;
 use App\Http\Controllers\Api\Client\ClientController;
 use App\Http\Controllers\Api\Project\ProjectController;
 use App\Http\Controllers\Api\ProjectPhase\ProjectPhaseController;
+use App\Http\Controllers\Api\ProjectMember\ProjectMemberController;
+
 
 
 // -----------------------------
@@ -93,7 +95,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
 
  // -----------------------------
-    // Project Routes
+    // ProjectPhase Routes
     // -----------------------------
 
     Route::prefix('project-phases')->group(function () {
@@ -104,6 +106,20 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/{id}', [ProjectPhaseController::class, 'show']);       
         Route::put('/{id}', [ProjectPhaseController::class, 'update']);     
         Route::delete('/{id}', [ProjectPhaseController::class, 'destroy']); 
+    });
+
+
+ // -----------------------------
+    // project-members Routes
+    // -----------------------------
+
+    Route::prefix('project-members')->group(function () {
+        Route::get('/', [ProjectMemberController::class,'index']);          
+        Route::post('/', [ProjectMemberController::class,'store']);         
+        Route::post('/bulk', [ProjectMemberController::class, 'storeMultiple']); 
+        Route::get('/{id}', [ProjectMemberController::class,'show']);       
+        Route::put('/{id}', [ProjectMemberController::class,'update']);     
+        Route::delete('/{id}', [ProjectMemberController::class,'destroy']); 
     });
 
 });
