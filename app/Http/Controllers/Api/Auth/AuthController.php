@@ -74,7 +74,6 @@ class AuthController extends Controller
             'status'=>'success',
             'message'=>'Login successful',
             'data'=>[
-                'user'=>$user,
                 'access_token'=>$token,
                 'token_type'=>'Bearer'
             ],

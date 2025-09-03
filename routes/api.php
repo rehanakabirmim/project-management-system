@@ -3,26 +3,27 @@
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\Auth\AuthController;
+use App\Http\Controllers\Api\User\UserController;
 
 
-// Auth Routes
+// Public Auth routes
 Route::prefix('auth')->group(function () {
-
-    // Public routes (no auth required)
     Route::post('/register', [AuthController::class, 'register']);
     Route::post('/login', [AuthController::class, 'login']);
     Route::post('/forgot-password', [AuthController::class, 'forgotPassword']);
     Route::post('/reset-password', [AuthController::class, 'resetPassword']);
+});
 
-    // Protected routes (auth:sanctum required)
-    Route::middleware('auth:sanctum')->group(function () {
-        Route::post('/logout', [AuthController::class, 'logout']);
+// Protected routes (needs login)
+Route::middleware('auth:sanctum')->group(function () {
 
-       
-    });
+    // Logout still under auth
+    Route::post('/auth/logout', [AuthController::class, 'logout']);
+
+    // User profile routes (no auth prefix needed)
+    Route::get('/user/profile', [UserController::class, 'profile']);
+    Route::put('/user/update', [UserController::class, 'update']);
 });
 
 
-// Route::get('/user', function (Request $request) {
-//     return $request->user();
-// })->middleware('auth:sanctum');
+
