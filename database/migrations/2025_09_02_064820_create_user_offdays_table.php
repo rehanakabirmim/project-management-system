@@ -12,13 +12,12 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('user_offdays', function (Blueprint $table) {
-        $table->id();
-        $table->foreignId('user_id')->constrained()->cascadeOnDelete();
-        $table->date('off_date');
-        $table->string('reason')->nullable();
-        $table->timestamps();
-    });
-
+            $table->id();
+            $table->foreignId('user_id')->constrained()->cascadeOnDelete();
+            $table->string('off_day'); // store any day name
+            $table->string('reason')->nullable();
+            $table->timestamps();
+        });
     }
 
     /**

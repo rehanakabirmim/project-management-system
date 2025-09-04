@@ -13,6 +13,7 @@ use App\Http\Controllers\Api\Project\ProjectController;
 use App\Http\Controllers\Api\ProjectPhase\ProjectPhaseController;
 use App\Http\Controllers\Api\ProjectMember\ProjectMemberController;
 use App\Http\Controllers\API\Task\TaskController;
+use App\Http\Controllers\API\User\UserOffdayController;
 
 
 
@@ -135,6 +136,19 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/{task}', [TaskController::class, 'show']);
         Route::put('/{task}', [TaskController::class, 'update']);
         Route::delete('/{task}', [TaskController::class, 'destroy']);
+    });
+
+
+    // -----------------------------
+    // UserOffday  Routes
+    // -----------------------------
+
+    Route::prefix('user-offdays')->group(function () {
+        Route::get('/', [UserOffdayController::class, 'index']);            
+        Route::post('/', [UserOffdayController::class, 'store']);           
+        Route::get('/{userOffday}', [UserOffdayController::class, 'show']); 
+        Route::put('/{userOffday}', [UserOffdayController::class, 'update']); 
+        Route::delete('/{userOffday}', [UserOffdayController::class, 'destroy']); 
     });
 
 });

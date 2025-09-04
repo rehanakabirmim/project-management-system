@@ -6,9 +6,16 @@ use Illuminate\Database\Eloquent\Model;
 
 class UserOffday extends Model
 {
-    protected $fillable = ['user_id','off_date','reason'];
+    // Fillable fields
+    protected $fillable = [
+        'user_id',
+        'off_day',   
+        'reason'
+    ];
 
-    public function user(){
+    // Relationship: each offday belongs to a user
+    public function user()
+    {
         return $this->belongsTo(User::class);
     }
 }
