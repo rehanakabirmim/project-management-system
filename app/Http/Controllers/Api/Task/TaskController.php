@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Task;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 
 class TaskController extends Controller
 {
@@ -20,29 +21,19 @@ class TaskController extends Controller
             'phase',
             'projectMembers.user',
             'projectMembers.role',
-            'project.tasks.projectMembers'
         ])->paginate(10);
 
         $tasksData = $tasks->map(function ($task) {
             $totalMembers = $task->projectMembers->count();
-            $completed = 0; // manual logic, no column
+            $completed = 0; // manual logic
             $progressPercent = $totalMembers > 0 ? round(($completed / $totalMembers) * 100, 2) : 0;
-
-            $totalProgressPercent = 0;
-            if ($task->project && $task->project->tasks->count() > 0) {
-                $sum = 0;
-                foreach ($task->project->tasks as $t) {
-                    $totalM = $t->projectMembers->count();
-                    $sum += 0; // manual completed
-                }
-                $totalProgressPercent = round($sum / $task->project->tasks->count(), 2);
-            }
 
             return [
                 'task' => $task,
-                'assigned_member_count' => $task->projectMembers->count(),
+                'assigned_member_count' => $totalMembers,
                 'progress_percent' => $progressPercent,
-                'total_progress_percent' => $totalProgressPercent
+                'source_code_url' => $task->source_code ? asset('storage/'.$task->source_code) : $task->source_code,
+                'live_demo_url' => $task->live_demo ? asset('storage/'.$task->live_demo) : $task->live_demo,
             ];
         });
 
@@ -74,9 +65,30 @@ class TaskController extends Controller
             'assigned_to' => 'nullable|exists:users,id',
             'project_member_ids' => 'nullable|array',
             'project_member_ids.*' => 'exists:project_members,id',
+            'source_code' => 'nullable|string',
+            'live_demo' => 'nullable|string',
+            'source_code_file' => 'nullable|file|mimes:pdf,doc,docx|max:10240',
+            'live_demo_file' => 'nullable|file|mimes:pdf,doc,docx|max:10240',
         ]);
 
         DB::transaction(function () use ($validated, &$task) {
+
+            // Handle source_code file upload
+            if (!empty($validated['source_code_file'])) {
+                $file = $validated['source_code_file'];
+                $filename = time().'_'.$file->getClientOriginalName();
+                $path = $file->storeAs('tasks/source_code', $filename, 'public');
+                $validated['source_code'] = $path;
+            }
+
+            // Handle live_demo file upload
+            if (!empty($validated['live_demo_file'])) {
+                $file = $validated['live_demo_file'];
+                $filename = time().'_'.$file->getClientOriginalName();
+                $path = $file->storeAs('tasks/live_demo', $filename, 'public');
+                $validated['live_demo'] = $path;
+            }
+
             $task = Task::create([
                 'project_id' => $validated['project_id'],
                 'phase_id' => $validated['phase_id'] ?? null,
@@ -85,6 +97,8 @@ class TaskController extends Controller
                 'start_date' => $validated['start_date'] ?? null,
                 'end_date' => $validated['end_date'] ?? null,
                 'assigned_to' => $validated['assigned_to'] ?? null,
+                'source_code' => $validated['source_code'] ?? null,
+                'live_demo' => $validated['live_demo'] ?? null,
             ]);
 
             if (!empty($validated['project_member_ids'])) {
@@ -100,6 +114,8 @@ class TaskController extends Controller
             'data' => [
                 'task' => $task,
                 'assigned_member_count' => $task->projectMembers->count(),
+                'source_code_url' => $task->source_code ? asset('storage/'.$task->source_code) : $task->source_code,
+                'live_demo_url' => $task->live_demo ? asset('storage/'.$task->live_demo) : $task->live_demo,
             ]
         ], 201);
     }
@@ -117,6 +133,8 @@ class TaskController extends Controller
             'data' => [
                 'task' => $task,
                 'assigned_member_count' => $task->projectMembers->count(),
+                'source_code_url' => $task->source_code ? asset('storage/'.$task->source_code) : $task->source_code,
+                'live_demo_url' => $task->live_demo ? asset('storage/'.$task->live_demo) : $task->live_demo,
             ]
         ]);
     }
@@ -136,9 +154,36 @@ class TaskController extends Controller
             'assigned_to' => 'nullable|exists:users,id',
             'project_member_ids' => 'nullable|array',
             'project_member_ids.*' => 'exists:project_members,id',
+            'source_code' => 'nullable|string',
+            'live_demo' => 'nullable|string',
+            'source_code_file' => 'nullable|file|mimes:pdf,doc,docx|max:10240',
+            'live_demo_file' => 'nullable|file|mimes:pdf,doc,docx|max:10240',
         ]);
 
         DB::transaction(function () use ($validated, $task) {
+
+            // Delete old source_code if new uploaded
+            if (!empty($validated['source_code_file']) && $task->source_code && Storage::disk('public')->exists($task->source_code)) {
+                Storage::disk('public')->delete($task->source_code);
+            }
+            if (!empty($validated['source_code_file'])) {
+                $file = $validated['source_code_file'];
+                $filename = time().'_'.$file->getClientOriginalName();
+                $path = $file->storeAs('tasks/source_code', $filename, 'public');
+                $validated['source_code'] = $path;
+            }
+
+            // Delete old live_demo if new uploaded
+            if (!empty($validated['live_demo_file']) && $task->live_demo && Storage::disk('public')->exists($task->live_demo)) {
+                Storage::disk('public')->delete($task->live_demo);
+            }
+            if (!empty($validated['live_demo_file'])) {
+                $file = $validated['live_demo_file'];
+                $filename = time().'_'.$file->getClientOriginalName();
+                $path = $file->storeAs('tasks/live_demo', $filename, 'public');
+                $validated['live_demo'] = $path;
+            }
+
             $task->update($validated);
 
             if (!empty($validated['project_member_ids'])) {
@@ -154,6 +199,8 @@ class TaskController extends Controller
             'data' => [
                 'task' => $task,
                 'assigned_member_count' => $task->projectMembers->count(),
+                'source_code_url' => $task->source_code ? asset('storage/'.$task->source_code) : $task->source_code,
+                'live_demo_url' => $task->live_demo ? asset('storage/'.$task->live_demo) : $task->live_demo,
             ]
         ]);
     }
@@ -166,6 +213,15 @@ class TaskController extends Controller
         $task = Task::findOrFail($id);
 
         DB::transaction(function () use ($task) {
+
+            // Delete uploaded files
+            if ($task->source_code && Storage::disk('public')->exists($task->source_code)) {
+                Storage::disk('public')->delete($task->source_code);
+            }
+            if ($task->live_demo && Storage::disk('public')->exists($task->live_demo)) {
+                Storage::disk('public')->delete($task->live_demo);
+            }
+
             $task->projectMembers()->detach();
             $task->delete();
         });
