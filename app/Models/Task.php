@@ -23,5 +23,25 @@ class Task extends Model
     public function assignee(){
         return $this->belongsTo(User::class,'assigned_to');
     }
-}
 
+    public function assignedUser(){
+        return $this->belongsTo(User::class,'assigned_to');
+    }
+
+    public function projectMembers(){
+        return $this->belongsToMany(
+            ProjectMember::class,
+            'task_project_member',
+            'task_id',
+            'project_member_id'
+        )->withTimestamps();
+    }
+
+    // Detach members automatically when task is deleted
+    protected static function booted()
+    {
+        static::deleting(function ($task) {
+            $task->projectMembers()->detach();
+        });
+    }
+}

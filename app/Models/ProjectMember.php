@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Relations\Pivot;
+use Spatie\Permission\Models\Role;
 
 class ProjectMember extends Pivot
 {
@@ -22,6 +23,18 @@ class ProjectMember extends Pivot
 
     public function role()
     {
-        return $this->belongsTo(\Spatie\Permission\Models\Role::class,'assigned_role_id');
+        return $this->belongsTo(Role::class,'assigned_role_id');
     }
+
+
+
+    public function tasks()
+    {
+        return $this->belongsToMany(Task::class, 'task_project_member');
+    }
+
+
+
+
+
 }

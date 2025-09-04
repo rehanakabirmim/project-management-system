@@ -12,6 +12,7 @@ use App\Http\Controllers\Api\Client\ClientController;
 use App\Http\Controllers\Api\Project\ProjectController;
 use App\Http\Controllers\Api\ProjectPhase\ProjectPhaseController;
 use App\Http\Controllers\Api\ProjectMember\ProjectMemberController;
+use App\Http\Controllers\API\Task\TaskController;
 
 
 
@@ -120,6 +121,20 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/{id}', [ProjectMemberController::class,'show']);       
         Route::put('/{id}', [ProjectMemberController::class,'update']);     
         Route::delete('/{id}', [ProjectMemberController::class,'destroy']); 
+    });
+
+
+ // -----------------------------
+    // Task  Routes
+    // -----------------------------
+
+
+    Route::prefix('tasks')->group(function () {
+        Route::get('/', [TaskController::class, 'index']);
+        Route::post('/', [TaskController::class, 'store']);
+        Route::get('/{task}', [TaskController::class, 'show']);
+        Route::put('/{task}', [TaskController::class, 'update']);
+        Route::delete('/{task}', [TaskController::class, 'destroy']);
     });
 
 });
