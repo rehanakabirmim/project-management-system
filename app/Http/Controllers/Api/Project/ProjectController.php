@@ -13,9 +13,8 @@ class ProjectController extends Controller
     // List all projects
     public function index()
     {
-        $projects = Project::with('creator', 'members')->get()->map(function($project) {
-            return $this->formatProjectResponse($project);
-        });
+        $projects = Project::with('creator', 'members', 'phases')->get()
+            ->map(fn($project) => $this->formatProjectResponse($project));
 
         return response()->json($projects, 200);
     }
@@ -39,25 +38,52 @@ class ProjectController extends Controller
             'created_by'          => 'required|exists:users,id',
             'member_ids'          => 'nullable|array',
             'member_ids.*'        => 'exists:users,id',
+            'phase_ids'           => 'nullable|array',
+            'phase_ids.*'         => 'exists:project_phases,id',
             'order_sheet_link'    => 'nullable|string|url',
+            'order_sheet_file'    => 'nullable|file|mimes:pdf,doc,docx|max:10240',
         ]);
 
-        $project = Project::create($data);
+        // Handle file upload
+        if ($request->hasFile('order_sheet_file')) {
+            $file = $request->file('order_sheet_file');
+            $filename = time() . '_' . $file->getClientOriginalName();
+            $path = $file->storeAs('order_sheets', $filename, 'public');
+            $data['order_sheet_link'] = $path;
+        }
 
+        $project = Project::create($data);
+        $notifications = [];
+
+        // Attach members & send notifications
         if (!empty($data['member_ids'])) {
             $project->members()->sync($data['member_ids']);
+            foreach ($project->members as $user) {
+                $notifications[] = NotificationService::create(
+                    $user->id,
+                    'New Project Assigned',
+                    "Project {$project->project_name} has been assigned to you.",
+                    'project'
+                );
+            }
+        }
+
+        // Attach phases
+        if (!empty($data['phase_ids'])) {
+            $project->phases()->sync($data['phase_ids']);
         }
 
         return response()->json([
             'message' => 'Project created successfully',
-            'project' => $this->formatProjectResponse($project->load('creator', 'members'))
+            'project' => $project->load('creator', 'members', 'phases'),
+            'notifications' => $notifications
         ], 201);
     }
 
     // Show single project
     public function show($id)
     {
-        $project = Project::with('creator', 'members')->findOrFail($id);
+        $project = Project::with('creator', 'members', 'phases')->findOrFail($id);
         return response()->json($this->formatProjectResponse($project), 200);
     }
 
@@ -81,45 +107,127 @@ class ProjectController extends Controller
             'issue'               => 'nullable|string',
             'member_ids'          => 'nullable|array',
             'member_ids.*'        => 'exists:users,id',
+            'phase_ids'           => 'nullable|array',
+            'phase_ids.*'         => 'exists:project_phases,id',
             'order_sheet_link'    => 'nullable|string|url',
+            'order_sheet_file'    => 'nullable|file|mimes:pdf,doc,docx|max:10240',
         ]);
 
-        $project->update($data);
+        // Handle file upload and delete old file
+        if ($request->hasFile('order_sheet_file')) {
+            if ($project->order_sheet_link && Storage::disk('public')->exists($project->order_sheet_link)) {
+                Storage::disk('public')->delete($project->order_sheet_link);
+            }
+            $file = $request->file('order_sheet_file');
+            $filename = time() . '_' . $file->getClientOriginalName();
+            $path = $file->storeAs('order_sheets', $filename, 'public');
+            $data['order_sheet_link'] = $path;
+        } elseif (!empty($data['order_sheet_link'])) {
+            $data['order_sheet_link'] = $data['order_sheet_link'];
+        }
 
+        $project->update($data);
+        $notifications = [];
+
+        // Sync members and send notifications
         if (isset($data['member_ids'])) {
             $project->members()->sync($data['member_ids']);
+            foreach ($project->members as $user) {
+                $notifications[] = NotificationService::create(
+                    $user->id,
+                    'Project Updated',
+                    "Project {$project->project_name} has been updated.",
+                    'project'
+                );
+            }
+        }
+
+        // Sync phases
+        if (isset($data['phase_ids'])) {
+            $project->phases()->sync($data['phase_ids']);
         }
 
         return response()->json([
             'message' => 'Project updated successfully',
-            'project' => $this->formatProjectResponse($project->load('creator', 'members'))
+            'project' => $project->load('creator', 'members', 'phases'),
+            'notifications' => $notifications
         ], 200);
+    }
+
+    // Delete project
+    public function destroy($id)
+    {
+        $project = Project::findOrFail($id);
+
+        $members = $project->members ?? collect([]);
+        $notifications = [];
+
+        // Detach members & phases
+        $project->members()->detach();
+        $project->phases()->detach();
+
+        // Delete physical file if exists
+        if ($project->order_sheet_link && Storage::disk('public')->exists($project->order_sheet_link)) {
+            Storage::disk('public')->delete($project->order_sheet_link);
+        }
+
+        $project->delete();
+
+        // Send notifications to previous members
+        foreach ($members as $user) {
+            $notifications[] = NotificationService::create(
+                $user->id,
+                'Project Deleted',
+                "Project {$project->project_name} has been deleted.",
+                'project'
+            );
+        }
+
+        return response()->json([
+            'message' => 'Project deleted successfully',
+            'notifications' => $notifications
+        ], 200);
+    }
+
+    // Get deadlines / remaining days for all projects
+    public function deadlines()
+    {
+        $projects = Project::all()->map(function($project) {
+            $project->deadline_days = now()->diffInDays($project->end_date, false);
+            return $this->formatProjectResponse($project);
+        });
+
+        return response()->json($projects, 200);
     }
 
     // Format project response with auto-calculated fields
     private function formatProjectResponse(Project $project)
     {
         return [
-            'id' => $project->id,
-            'project_name' => $project->project_name,
-            'client_id' => $project->client_id,
-            'profile_name' => $project->profile_name,
-            'status' => $project->status,
-            'start_date' => $project->start_date,
-            'end_date' => $project->end_date,
-            'total_amount' => $project->total_amount,
-            'running_state' => $project->running_state,
-            'is_delivered' => $project->is_delivered,
-            'post_delivery_state' => $project->post_delivery_state,
-            'client_mood' => $project->client_mood,
-            'issue' => $project->issue,
-            'created_by' => $project->created_by,
-            'order_sheet_link' => $project->order_sheet_link,
-            'members' => $project->members,
-            'creator' => $project->creator,
-            'deadline_days' => $project->deadline_days,
-            'remaining_time' => $project->remaining_time,
-            'color_code' => $project->color_code,
+            'id'                 => $project->id,
+            'project_name'       => $project->project_name,
+            'client_id'          => $project->client_id,
+            'profile_name'       => $project->profile_name,
+            'status'             => $project->status,
+            'start_date'         => $project->start_date,
+            'end_date'           => $project->end_date,
+            'total_amount'       => $project->total_amount,
+            'running_state'      => $project->running_state,
+            'is_delivered'       => $project->is_delivered,
+            'post_delivery_state'=> $project->post_delivery_state,
+            'client_mood'        => $project->client_mood,
+            'issue'              => $project->issue,
+            'created_by'         => $project->created_by,
+            'order_sheet_link'   => $project->order_sheet_link,
+            'members'            => $project->members,
+            'phases'             => $project->phases,
+            'creator'            => $project->creator,
+            'deadline_days'      => $project->deadline_days,
+            'remaining_time'     => $project->remaining_time,
+            'color_code'         => $project->color_code,
         ];
     }
+
+
+
 }
