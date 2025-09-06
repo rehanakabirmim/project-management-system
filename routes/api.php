@@ -15,6 +15,8 @@ use App\Http\Controllers\Api\ProjectMember\ProjectMemberController;
 use App\Http\Controllers\API\Task\TaskController;
 use App\Http\Controllers\API\User\UserOffdayController;
 use App\Http\Controllers\Api\Attachment\AttachmentController;
+use App\Http\Controllers\Api\Comment\CommentController;
+use App\Http\Controllers\Api\Tag\TagController;
 
 
 
@@ -165,6 +167,36 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/{id}/download', [AttachmentController::class, 'download']);
         Route::delete('/{id}', [AttachmentController::class, 'destroy']);
     });
-        
 
+
+// -----------------------------
+    // summary  Routes
+    // -----------------------------
+    Route::prefix('summary')->group(function() {
+    Route::get('project/{projectId}/activity-logs', [\App\Http\Controllers\Api\Summary\ActivityLogController::class, 'projectSummary']);
+});
+
+
+
+// -----------------------------
+    // Comment with reply Routes
+    // -----------------------------
+    Route::prefix('comment')->group(function () {
+        Route::get('/', [CommentController::class, 'index']);      // List all comments & replies
+        Route::post('/', [CommentController::class, 'store']);     // Add comment/reply
+        Route::delete('/{id}', [CommentController::class, 'destroy']); // Delete comment
+    });
+
+
+
+// -----------------------------
+    // TagController Routes
+    // -----------------------------
+    Route::prefix('tags')->group(function() {
+        Route::get('/', [TagController::class, 'index']);             // list all tags
+        Route::post('/', [TagController::class, 'store']);            // create tag
+        Route::post('/attach', [TagController::class, 'attach']);     // attach tag
+        Route::post('/detach', [TagController::class, 'detach']);     // detach tag
+        Route::get('/fetch', [TagController::class, 'fetchTags']);    // fetch tags of model
+    });
 });

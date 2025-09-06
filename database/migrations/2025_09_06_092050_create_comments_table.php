@@ -17,9 +17,9 @@ return new class extends Migration
             $table->foreignId('task_id')->nullable()->constrained()->nullOnDelete();
             $table->foreignId('user_id')->constrained()->cascadeOnDelete();
             $table->text('comment');
+            $table->foreignId('parent_id')->nullable()->constrained('comments')->nullOnDelete(); // reply এর জন্য
             $table->timestamps();
         });
-
     }
 
     /**
