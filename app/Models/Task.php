@@ -28,6 +28,13 @@ class Task extends Model
         return $this->belongsTo(User::class,'assigned_to');
     }
 
+
+
+    public function attachments()
+    {
+        return $this->hasMany(Attachment::class);
+    }
+
     public function projectMembers(){
         return $this->belongsToMany(
             ProjectMember::class,

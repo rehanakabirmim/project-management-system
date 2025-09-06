@@ -51,6 +51,12 @@ class Project extends Model
         return $this->belongsTo(User::class, 'created_by');
     }
 
+    public function attachments()
+    {
+        return $this->hasMany(Attachment::class);
+    }
+
+
     public function members() {
         return $this->belongsToMany(User::class, 'project_members')
                     ->withPivot('assigned_role_id')

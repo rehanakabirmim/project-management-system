@@ -14,6 +14,7 @@ use App\Http\Controllers\Api\ProjectPhase\ProjectPhaseController;
 use App\Http\Controllers\Api\ProjectMember\ProjectMemberController;
 use App\Http\Controllers\API\Task\TaskController;
 use App\Http\Controllers\API\User\UserOffdayController;
+use App\Http\Controllers\Api\Attachment\AttachmentController;
 
 
 
@@ -155,6 +156,15 @@ Route::middleware('auth:sanctum')->group(function () {
     });
 
 
-    
+// -----------------------------
+    // AttachmentController  Routes
+    // -----------------------------
+    Route::prefix('attachments')->group(function () {
+        Route::get('/', [AttachmentController::class, 'index']);
+        Route::post('/', [AttachmentController::class, 'store']);
+        Route::get('/{id}/download', [AttachmentController::class, 'download']);
+        Route::delete('/{id}', [AttachmentController::class, 'destroy']);
+    });
+        
 
 });
