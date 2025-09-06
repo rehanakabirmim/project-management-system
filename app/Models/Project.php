@@ -3,6 +3,8 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Carbon\Carbon;
+
 
 class Project extends Model
 {
@@ -36,5 +38,57 @@ class Project extends Model
                     ->withTimestamps();
     }
 
+
+ 
+
+    
+   // Deadline in full days (integer)
+    public function getDeadlineDaysAttribute()
+        {
+            if (!$this->deadline) return null;
+
+            $now = Carbon::now();
+            $deadline = Carbon::parse($this->deadline);
+
+            // diffInDays(false) returns signed integer days, no fraction
+            $days = $now->diffInDays($deadline, false); 
+
+            return max((int)$days, 0) . ' days'; // cast to integer explicitly
+        }
+
+// Remaining time in hours and minutes
+    public function getRemainingTimeAttribute()
+    {
+        if (!$this->deadline) return null;
+
+        $now = Carbon::now();
+        $deadline = Carbon::parse($this->deadline);
+
+        if ($now->gte($deadline)) {
+            return '0 hours 0 minutes';
+        }
+
+        // difference in total minutes
+        $diffInMinutes = $now->diffInMinutes($deadline);
+
+        $hours = floor($diffInMinutes / 60);
+        $minutes = $diffInMinutes % 60;
+
+        return "{$hours} hours {$minutes} minutes";
+    }
+
+    // Color code based on remaining days
+    public function getColorCodeAttribute()
+    {
+        $now = Carbon::now();
+        $deadline = Carbon::parse($this->deadline);
+
+        if ($this->status === 'completed') return 'blue';
+        if ($this->status === 'extended') return 'lightgreen';
+        if ($now->gt($deadline)) return 'red';
+        if ($now->diffInDays($deadline) <= 5) return 'yellow';
+
+        return 'green';
+    }
 
 }

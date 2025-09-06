@@ -25,6 +25,7 @@ Route::prefix('auth')->group(function () {
     Route::post('/login', [AuthController::class, 'login']);
     Route::post('/forgot-password', [AuthController::class, 'forgotPassword']);
     Route::post('/reset-password', [AuthController::class, 'resetPassword']);
+   
 });
 
 // -----------------------------
@@ -89,10 +90,12 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::prefix('projects')->group(function () {
         Route::get('/', [ProjectController::class, 'index']);          // GET all projects
-        Route::post('/', [ProjectController::class, 'store']);         // POST new project
+        Route::post('/', [ProjectController::class, 'store']); //new project create
+        Route::get('/deadline', [ProjectController::class, 'deadlines']);//project dealine
         Route::get('/{id}', [ProjectController::class, 'show']);       // GET single project
         Route::put('/{id}', [ProjectController::class, 'update']);     // PUT update project
         Route::delete('/{id}', [ProjectController::class, 'destroy']); // DELETE project
+       //project dealine with reamings days
     });
 
 

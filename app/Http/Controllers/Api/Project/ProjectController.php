@@ -7,6 +7,8 @@ use Illuminate\Http\Request;
 use App\Models\Project;
 use App\Services\NotificationService;
 use Illuminate\Support\Facades\Storage;
+use Carbon\Carbon;
+
 
 class ProjectController extends Controller
 {
@@ -179,4 +181,38 @@ class ProjectController extends Controller
             'notifications' => $notifications
         ], 200);
     }
+
+
+
+
+
+public function deadlines()
+{
+    $projects = Project::with('creator')->get()
+        ->map(function ($project) {
+            return [
+                'id' => $project->id,
+                'project_name' => $project->project_name,
+                'deadline' => $project->deadline_days,      // integer days
+                'remaining_time' => $project->remaining_time, // hours + minutes
+                'status' => $project->status,
+                'color' => $project->color_code,
+                'creator_id' => $project->creator ? $project->creator->id : null,
+            ];
+        });
+
+    return response()->json([
+        'status' => 'success',
+        'data' => $projects
+    ]);
+}
+
+
+
+
+
+
+
+
+   
 }
